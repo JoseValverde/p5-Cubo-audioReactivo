@@ -1,0 +1,139 @@
+/* Estilos para el Cubo Reactivo p5.js */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #000000 0%, #727272 100%);
+    color: rgb(134, 134, 134);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    text-align: center;
+    padding: 0px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    width: 100vw;
+    
+    /* 
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    */
+}
+
+h1 {
+    font-size: 1rem;
+    margin-bottom: 20px;
+    background-color: #a3a3a3;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Layout principal horizontal */
+.main-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+    justify-content: center;
+}
+
+.canvas-section {
+    flex-shrink: 0;
+}
+
+.controls-section {
+    flex: 1;
+    max-width: 400px;
+    text-align: left;
+}
+
+#sketch-holder {
+    margin: 20px auto;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.2);
+    width: 540px;
+    height: 960px;
+}
+
+.controls {
+    margin-top: 0;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    height: fit-content;
+}
+
+
+.controls p {
+    margin: 8px 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.controls h3 {
+    color: #a3a3a3;
+    font-size: 1rem;
+    margin: 15px 0 10px 0;
+    padding-bottom: 5px;
+}
+
+.controls h3:first-child {
+    margin-top: 0;
+}
+
+/* Efectos hover */
+
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .main-content {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .controls-section {
+        max-width: 540px;
+    }
+    
+    #sketch-holder {
+        width: 100%;
+        max-width: 540px;
+        height: auto;
+        aspect-ratio: 9/16;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        margin: 10px;
+        padding: 15px;
+    }
+    
+   
+    
+    #sketch-holder canvas {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+}
+
+/* Animaciones */
+
+
+/* Estilos para modo oscuro del navegador */
+@media (prefers-color-scheme: dark) {
+    .container {
+        background: rgba(0, 0, 0, 0.3);
+    }
+}

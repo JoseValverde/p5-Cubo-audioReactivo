@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cubo Reactivo - p5.js</title>
+    <title>Cubo Reactivo - p5.js v2.2</title>
     
     <!-- p5.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
@@ -11,9 +11,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
     
     <!-- Custom styles -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2.2">
+    
+    <!-- Meta to prevent caching -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 </head>
 <body>
+    <!-- VERSION 2.2 CON SLIDERS FORCE UPDATE -->
     <div class="container">
         
         <div class="main-content">
@@ -22,30 +28,107 @@
             </div>
             <div class="controls-section">
                 <div class="controls">
-                    <h1>Cubo Reactivo</h1>
-                    <h3>🎮 Controles:</h3>
-                    <p>• <strong>CLICK</strong> → Cambiar color</p>
-                    <p>• <strong>ESPACIO</strong> → Toggle audio</p>
-                    <p>• <strong>R</strong> → Color aleatorio</p>
-                    <p>• <strong>C</strong> → Cambiar color</p>
-                    <p>• <strong>X</strong> → Reconectar audio</p>
+                    <h1>Cubo Reactivo v2.2</h1>
                     
-                    <h3>🎵 Estados:</h3>
-                    <div id="audio-status">🔍 Detectando audio...</div>
+                    <div class="sliders-section">
+                        <h3>Controles Audio-Visuales:</h3>
+                        
+                        <div class="slider-group">
+                            <label>Rotación X: <span id="rotX-value">1.0</span></label>
+                            <input type="range" id="rotX-slider" min="-2" max="2" step="0.1" value="1">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <label>Rotación Y: <span id="rotY-value">1.0</span></label>
+                            <input type="range" id="rotY-slider" min="-2" max="2" step="0.1" value="1">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <label>Rotación Z: <span id="rotZ-value">1.0</span></label>
+                            <input type="range" id="rotZ-slider" min="-2" max="2" step="0.1" value="1">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <label>Escala: <span id="scale-value">1.0</span></label>
+                            <input type="range" id="scale-slider" min="0.1" max="3" step="0.1" value="1">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <label>Saturación: <span id="saturation-value">80%</span></label>
+                            <input type="range" id="saturation-slider" min="-100" max="100" step="5" value="80">
+                        </div>
+                        
+                        <div class="slider-group">
+                            <label>Brillo: <span id="brightness-value">80%</span></label>
+                            <input type="range" id="brightness-slider" min="0" max="100" step="5" value="80">
+                        </div>
+                        
+                        <div class="reset-buttons">
+                            <button onclick="resetControls()">Reset Controles</button>
+                        </div>
+                    </div>
                     
-                    <h3>🎨 Efectos:</h3>
-                    <p>• 🔵 Graves → Escala del cubo</p>
-                    <p>• 🟡 Medios → Rotación</p>
-                    <p>• 🔴 Agudos → Brillo</p>
+                    <h3>Estado del Sistema:</h3>
+                    <div id="system-info">
+                        <p>FPS: <span id="fps-value">--</span></p>
+                        <p>Color HSB: <span id="color-value">--</span>°</p>
+                    </div>
                     
-                    <h3>💡 Ayuda:</h3>
-                    <p>Permite acceso al micrófono y reproduce música para ver el cubo reaccionar al sonido.</p>
+                    <h3>Análisis de Audio:</h3>
+                    <div id="audio-info">
+                        <p>Estado: <span id="audio-status-text">DETECTANDO...</span></p>
+                        <p>Nivel General: <span id="audio-level">--</span>%</p>
+                    </div>
+                    
+                    <h3>Bandas de Frecuencia:</h3>
+                    <div id="frequency-info">
+                        <p>SUB-GRAVES (20-100Hz): <span id="bass-level">--</span></p>
+                        <p>└── Efecto: Escala del cubo</p>
+                        <p>└── Factor: <span id="bass-factor">1.0</span>x</p>
+                        
+                        <p>MEDIOS (100-4000Hz): <span id="mid-level">--</span></p>
+                        <p>└── Efecto: Rotación dinámica</p>
+                        <p>└── Vel. X: <span id="rot-x-speed">0.0000</span> rad/frame</p>
+                        <p>└── Vel. Y: <span id="rot-y-speed">0.0000</span> rad/frame</p>
+                        
+                        <p>AGUDOS (4000+Hz): <span id="treble-level">--</span></p>
+                        <p>└── Efecto: Brillo del cubo</p>
+                        <p>└── Saturación: <span id="dynamic-saturation">80.0</span>%</p>
+                        <p>└── Brillo: <span id="dynamic-brightness">90.0</span>%</p>
+                    </div>
+                    
+                    <h3>Animación:</h3>
+                    <div id="animation-info">
+                        <p>Rotación X: <span id="current-rot-x">0.000</span> rad</p>
+                        <p>Rotación Y: <span id="current-rot-y">0.000</span> rad</p>
+                        <p>Tamaño: <span id="current-size">--</span>px</p>
+                    </div>
+                    
+                    <h3>Controles Teclado:</h3>
+                    <p>• CLICK → Cambiar color</p>
+                    <p>• ESPACIO → Toggle audio</p>
+                    <p>• R → Color aleatorio</p>
+                    <p>• C → Cambiar color</p>
+                    <p>• X → Reconectar audio</p>
+                    
+                    <h3>Efectos Visuales:</h3>
+                    <p>• Graves → Escala del cubo</p>
+                    <p>• Medios → Rotación</p>
+                    <p>• Agudos → Brillo</p>
+                    
+                    <h3>Ayuda:</h3>
+                    <p>Permite acceso al micrófono y reproduce música para ver el cubo reaccionar al sonido. Usa los sliders para controlar la intensidad de cada efecto.</p>
                 </div>
             </div>
         </div>
     </div>
     
     <!-- Main sketch -->
-    <script src="sketch.js"></script>
+    <script src="sketch.js?v=2.2"></script>
+    
+    <script>
+        // Force refresh message
+        console.log("NUEVA VERSIÓN 2.2 CARGADA CON SLIDERS");
+    </script>
 </body>
 </html>

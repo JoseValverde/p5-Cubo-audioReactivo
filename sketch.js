@@ -9,15 +9,20 @@ let isAudioEnabled = false;
 
 // Variables de frecuencia de audio
 let fft;
-let bassLevel = 0;              console.log("🎛️ FFT conectado - Análisis activo");
-        console.log("⚡ Configuración: Sin suavizado, optimizada para electrónica");
-        
-        updateAudioStatus('✅ Micrófono conectado', '#00ff00');     // 🔵 Graves (20-250 Hz)
+let bassLevel = 0;             // 🔵 Graves (20-250 Hz)
 let midLevel = 0;              // 🟡 Medios (250-4000 Hz) 
 let trebleLevel = 0;           // 🔴 Agudos (4000+ Hz)
 let spectrum = [];
 let bassRotation = 0;
 let midRotation = 0;
+
+// Variables de control de parámetros
+let rotXMultiplier = 1.0;
+let rotYMultiplier = 1.0;
+let rotZMultiplier = 1.0;
+let scaleMultiplier = 1.0;
+let saturationControl = 80;
+let brightnessControl = 80;
 
 function setup() {
   // Crear canvas proporcional a 1080x1920 (9:16)
@@ -35,21 +40,17 @@ function setup() {
   // Detectar dispositivos de audio disponibles
   detectAudioDevices();
   
-  // Activar audio automáticamente al iniciar
-  setTimeout(() => {
-    console.log("🚀 Intentando activar audio automáticamente...");
-    enableAudio();
-  }, 500); // Dar tiempo para que se cargue todo
-  
-  // Verificación adicional si falla el primer intento
-  setTimeout(() => {
-    if (!isAudioEnabled) {
-      console.log("⚠️ Primer intento falló, reintentando...");
+  // Auto-activar audio si está disponible
+  if (getAudioContext) {
+    setTimeout(() => {
       enableAudio();
-    }
-  }, 2000);
+    }, 100);
+    setTimeout(() => {
+      enableAudio();
+    }, 2000);
+  }  // Configurar controles después de un delay más largo para asegurar que el DOM esté listo
+  setTimeout(setupControls, 500);
   
-  console.log("Sketch iniciado - Cubo Reactivo");
   updateAudioStatus('🔍 Inicializando audio...', '#ffaa00');
 }
 
@@ -78,7 +79,6 @@ function draw() {
   if (isAudioEnabled) {
     // Audio real - verificar si el micrófono sigue conectado
     if (!mic || !mic.enabled) {
-      console.log("Micrófono desconectado - Intentando reconectar...");
       reconnectAudio();
       return;
     }
@@ -87,28 +87,23 @@ function draw() {
     spectrum = fft.analyze();
     audioLevel = mic.getLevel();
     
-    // Verificar si realmente hay datos de audio
-    if (audioLevel === 0 && spectrum.every(val => val === 0)) {
-      console.log("Sin datos de audio - Verificando conexión...");
-    }
-    
     // Analizar bandas de frecuencias
     analyzeFrequencyBands();
     
     // 🔵 SUB-GRAVES → Escala del cubo (más reactivo para kicks potentes)
-    let bassScale = map(bassLevel, 0, 255, 0.1, 4);
+    let bassScale = map(bassLevel, 0, 255, 0.1, 4) * scaleMultiplier;
     scale(bassScale);
   
     // 🟡 MEDIOS → Rotación (ajustado para elementos melódicos electrónicos)
     bassRotation += midLevel * 0.005;  // Más sensible a cambios melódicos
     midRotation += midLevel * 0.008;   // Rotación Y más rápida para leads
-    rotateX(bassRotation/10);
-    rotateY(midRotation/10);
-    rotateZ(frameCount * 0.001); // Z más dinámico para drops
+    rotateX(bassRotation/10 * rotXMultiplier);
+    rotateY(midRotation/10 * rotYMultiplier);
+    rotateZ(frameCount * 0.001 * rotZMultiplier); // Z más dinámico para drops
     
     // 🔴 AGUDOS → Brillo (saturación y valor)
-    let brightness = map(trebleLevel, 0, 255, 60, 100);
-    let saturation = map(trebleLevel, 0, 255, 50, 100);
+    let brightness = map(trebleLevel, 0, 255, 20, brightnessControl);
+    let saturation = saturationControl;
     colorHue = map(audioLevel, 0, 1, 0, 360); // Color general por nivel
   } else {
     // Rotaciones normales sin audio
@@ -122,12 +117,12 @@ function draw() {
   let dynamicSize = cubeSize + sin(frameCount * 0.05) * 20;
   
   // Material del cubo con brillo reactivo a agudos
-  let currentBrightness = 90;
-  let currentSaturation = 80;
+  let currentBrightness = brightnessControl;
+  let currentSaturation = saturationControl;
   
   if (isAudioEnabled) {
-    currentBrightness = map(trebleLevel, 0, 255, 60, 100);
-    currentSaturation = map(trebleLevel, 0, 255, 50, 100);
+    currentBrightness = map(trebleLevel, 0, 255, 20, brightnessControl);
+    currentSaturation = saturationControl;
   }
   
   fill(colorHue, currentSaturation, currentBrightness);
@@ -139,64 +134,54 @@ function draw() {
   
   pop();
   
-  // Actualizar información de controles en HTML
-  updateControlsInfo();
+  // Actualizar solo los valores numéricos sin tocar los sliders
+  updateNumericInfo();
 }
 
-function updateControlsInfo() {
-  // Actualizar div de controles con información en tiempo real
-  let controlsDiv = document.querySelector('.controls');
-  if (controlsDiv) {
-    controlsDiv.innerHTML = `
-      <h3>Controles:</h3>
-      <p>• <strong>ANÁLISIS AUTOMÁTICO</strong>: Activo al cargar</p>
-      <p>• <strong>CLICK</strong>: Cambiar color</p>
-      <p>• <strong>ESPACIO</strong>: ON/OFF análisis FFT</p>
-      <p>• <strong>C</strong>: Cambiar color</p>
-      <p>• <strong>R</strong>: Cambiar color</p>
-      <p>• <strong>X</strong>: Forzar reconexión de audio</p>
-      
-      <h3>Estado del Sistema:</h3>
-      <p>• FPS: ${Math.round(frameRate())}</p>
-      <p>• Color HSB: ${Math.round(colorHue)}°</p>
-      
-      <h3>Análisis de Audio:</h3>
-      <p>• Estado: <span style="color: ${isAudioEnabled ? '#4ecdc4' : '#ff6b6b'}">${isAudioEnabled ? 'ANÁLISIS FFT ACTIVO' : 'DESACTIVADO'}</span></p>
-      ${isAudioEnabled ? `
-      <p>• Nivel General: <strong>${(audioLevel * 100).toFixed(1)}%</strong></p>
-      
-      <h3>Bandas de Frecuencia - MÚSICA ELECTRÓNICA:</h3>
-      <p><strong>SUB-GRAVES</strong> (20-100Hz): ${bassLevel.toFixed(1)}</p>
-      <p>   └── Efecto: <strong>Escala del cubo</strong> (kicks, sub-bass)</p>
-      <p>   └── Factor: ${isAudioEnabled ? map(bassLevel, 0, 255, 0.5, 3.5).toFixed(2) : '1.0'}x</p>
-      
-      <p><strong>MEDIOS</strong> (100-4000Hz): ${midLevel.toFixed(1)}</p>
-      <p>   └── Efecto: <strong>Rotación dinámica</strong> (basslines, leads)</p>
-      <p>   └── Velocidad X: ${(midLevel * 0.005).toFixed(4)} rad/frame</p>
-      <p>   └── Velocidad Y: ${(midLevel * 0.008).toFixed(4)} rad/frame</p>
-      
-      <p><strong>AGUDOS</strong> (4000+Hz): ${trebleLevel.toFixed(1)}</p>
-      <p>   └── Efecto: <strong>Brillo del cubo</strong> (hi-hats, crashes)</p>
-      <p>   └── Saturación: ${isAudioEnabled ? map(trebleLevel, 0, 255, 50, 100).toFixed(1) : '80.0'}%</p>
-      <p>   └── Brillo: ${isAudioEnabled ? map(trebleLevel, 0, 255, 60, 100).toFixed(1) : '90.0'}%</p>
-      ` : `
-      <p>• Para activar: presiona <strong>ESPACIO</strong></p>
-      <p>• Análisis FFT: Inactivo</p>
-      <p>• Bandas: Sin datos</p>
-      `}
-      
-      <h3>Animación:</h3>
-      <p>• Rotación X: ${(isAudioEnabled ? bassRotation : rotationX).toFixed(3)} rad</p>
-      <p>• Rotación Y: ${(isAudioEnabled ? midRotation : rotationY).toFixed(3)} rad</p>
-      <p>• Tamaño: ${Math.round(cubeSize + sin(frameCount * 0.05) * 20)}px</p>
-    `;
+function updateNumericInfo() {
+  // Actualizar información numérica SIN usar innerHTML en .controls
+  const fpsValue = document.getElementById('fps-value');
+  const colorValue = document.getElementById('color-value');
+  const audioStatusText = document.getElementById('audio-status-text');
+  const audioLevelValue = document.getElementById('audio-level');
+  const bassLevelValue = document.getElementById('bass-level');
+  const bassFactor = document.getElementById('bass-factor');
+  const midLevelValue = document.getElementById('mid-level');
+  const rotXSpeed = document.getElementById('rot-x-speed');
+  const rotYSpeed = document.getElementById('rot-y-speed');
+  const trebleLevelValue = document.getElementById('treble-level');
+  const dynamicSaturation = document.getElementById('dynamic-saturation');
+  const dynamicBrightness = document.getElementById('dynamic-brightness');
+  const currentRotX = document.getElementById('current-rot-x');
+  const currentRotY = document.getElementById('current-rot-y');
+  const currentSize = document.getElementById('current-size');
+  
+  // Actualizar valores individuales
+  if (fpsValue) fpsValue.textContent = Math.round(frameRate());
+  if (colorValue) colorValue.textContent = Math.round(colorHue);
+  
+  if (audioStatusText) {
+    audioStatusText.textContent = isAudioEnabled ? 'ANÁLISIS FFT ACTIVO' : 'DESACTIVADO';
+    audioStatusText.style.color = isAudioEnabled ? '#4ecdc4' : '#ff6b6b';
   }
+  
+  if (audioLevelValue) audioLevelValue.textContent = (audioLevel * 100).toFixed(1);
+  if (bassLevelValue) bassLevelValue.textContent = bassLevel.toFixed(1);
+  if (bassFactor) bassFactor.textContent = isAudioEnabled ? map(bassLevel, 0, 255, 0.5, 3.5).toFixed(2) : '1.0';
+  if (midLevelValue) midLevelValue.textContent = midLevel.toFixed(1);
+  if (rotXSpeed) rotXSpeed.textContent = (midLevel * 0.005).toFixed(4);
+  if (rotYSpeed) rotYSpeed.textContent = (midLevel * 0.008).toFixed(4);
+  if (trebleLevelValue) trebleLevelValue.textContent = trebleLevel.toFixed(1);
+  if (dynamicSaturation) dynamicSaturation.textContent = isAudioEnabled ? map(trebleLevel, 0, 255, 50, 100).toFixed(1) : '80.0';
+  if (dynamicBrightness) dynamicBrightness.textContent = isAudioEnabled ? map(trebleLevel, 0, 255, 60, 100).toFixed(1) : '90.0';
+  if (currentRotX) currentRotX.textContent = (isAudioEnabled ? bassRotation : rotationX).toFixed(3);
+  if (currentRotY) currentRotY.textContent = (isAudioEnabled ? midRotation : rotationY).toFixed(3);
+  if (currentSize) currentSize.textContent = Math.round(cubeSize + sin(frameCount * 0.05) * 20);
 }
 
 function mousePressed() {
-  // Solo cambiar color al hacer clic (no activar audio)
-  colorHue = random(360);
-  console.log("Color cambiado con CLICK");
+  // Cambiar color base al hacer click
+  currentHue = (currentHue + 30) % 360;
 }
 
 function keyPressed() {
@@ -205,7 +190,6 @@ function keyPressed() {
     if (isAudioEnabled) {
       mic.stop();
       isAudioEnabled = false;
-      console.log("Audio desactivado");
     } else {
       enableAudio();
     }
@@ -214,18 +198,15 @@ function keyPressed() {
   if (key === 'r' || key === 'R') {
     // Reset rotación (ahora solo cambia color)
     colorHue = random(360);
-    console.log("Color cambiado con R");
   }
   
   if (key === 'c' || key === 'C') {
     // Cambiar color con tecla C
     colorHue = random(360);
-    console.log("Color cambiado con C");
   }
   
   if (key === 'x' || key === 'X') {
     // Forzar reconexión de audio
-    console.log("Forzando reconexión de audio...");
     reconnectAudio();
   }
 }
@@ -236,37 +217,30 @@ async function detectAudioDevices() {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioInputs = devices.filter(device => device.kind === 'audioinput');
     
-    console.log("🎤 Dispositivos de audio detectados:");
-    audioInputs.forEach((device, index) => {
-      const label = device.label || `Dispositivo ${index + 1}`;
-      const type = label.includes('BlackHole') || label.includes('Virtual') ? '(Virtual)' : '(Built-in)';
-      console.log(`${index}: ${label} ${type} (ID: ${device.deviceId})`);
-    });
-    
-    // Buscar micrófono real (no virtual)
+    // Buscar dispositivos específicos en orden de preferencia
+    const blackHoleDevice = audioInputs.find(device => 
+      device.label.toLowerCase().includes('blackhole'));
+    const virtualDevice = audioInputs.find(device => 
+      device.label.toLowerCase().includes('virtual'));
     const realMic = audioInputs.find(device => 
-      !device.label.includes('BlackHole') && 
-      !device.label.includes('Virtual') &&
-      (device.label.includes('MacBook') || device.label.includes('Built-in'))
-    );
+      !device.label.toLowerCase().includes('blackhole') &&
+      !device.label.toLowerCase().includes('virtual'));
     
-    if (realMic) {
-      console.log(`✅ Micrófono real encontrado: ${realMic.label}`);
+    if (blackHoleDevice) {
+      return blackHoleDevice.deviceId;
+    } else if (virtualDevice) {
+      return virtualDevice.deviceId;
+    } else if (realMic) {
       return realMic.deviceId;
     } else {
-      console.log("⚠️ No se encontró micrófono real, usando por defecto");
       return null;
     }
-    
   } catch (error) {
-    console.log("❌ Error detectando dispositivos:", error);
     return null;
   }
 }
 
 function enableAudio() {
-  console.log("🎤 Iniciando proceso de activación de audio...");
-  
   // Primero intentar obtener acceso específico al micrófono
   navigator.mediaDevices.getUserMedia({ 
     audio: {
@@ -276,9 +250,6 @@ function enableAudio() {
     } 
   })
   .then(stream => {
-    console.log("✅ Acceso al micrófono concedido");
-    console.log("🔧 Stream obtenido:", stream.active ? "Activo" : "Inactivo");
-    
     // Detener micrófono anterior si existe
     if (mic && mic.stream) {
       mic.stop();
@@ -289,78 +260,38 @@ function enableAudio() {
     
     // Verificar que p5.AudioIn esté disponible
     if (!mic) {
-      console.log("❌ Error: p5.AudioIn no disponible");
       return;
     }
     
     mic.start();
-    console.log("🎵 Micrófono iniciado");
     
     // Dar tiempo para que se inicie el micrófono
     setTimeout(() => {
       if (mic && fft) {
         fft.setInput(mic);
         isAudioEnabled = true;
-        console.log("�️ FFT conectado - Análisis activo");
-        console.log("⚡ Configuración: Sin suavizado, optimizada para electrónica");
-        
-        // Verificar que realmente está recibiendo audio
-        setTimeout(() => {
-          if (mic) {
-            const testLevel = mic.getLevel();
-            console.log(`🔊 Nivel de audio: ${(testLevel * 100).toFixed(1)}%`);
-            
-            if (testLevel === 0) {
-              console.log("⚠️ Nivel cero detectado:");
-              console.log("   • Verifica que hay sonido reproduciéndose");
-              console.log("   • Comprueba el volumen del sistema");
-              console.log("   • Revisa permisos del navegador");
-            } else {
-              console.log("✅ Audio detectado correctamente");
-            }
-          }
-        }, 1000);
-      } else {
-        console.log("❌ Error: mic o fft no disponibles");
       }
     }, 300);
   })
   .catch(error => {
-    console.log("❌ Error accediendo al micrófono:", error.name, error.message);
-    
-    if (error.name === 'NotAllowedError') {
-      console.log("� Permisos denegados - Haz clic en el icono de micrófono en la barra de direcciones");
-    } else if (error.name === 'NotFoundError') {
-      console.log("🔍 Micrófono no encontrado - Verifica que esté conectado");
-    } else if (error.name === 'NotReadableError') {
-      console.log("📵 Micrófono ocupado por otra aplicación");
-    }
-    
-    console.log("💡 Para solucionarlo:");
-    console.log("   • Presiona X para reconectar");
-    console.log("   • Verifica permisos en el navegador");
-    console.log("   • Prueba a recargar la página");
+    // Manejo silencioso de errores de audio
   });
 }
 
 // Función para reconectar audio cuando se pierde la conexión
 function reconnectAudio() {
-  console.log("🔄 === RECONEXIÓN DE AUDIO ===");
   isAudioEnabled = false;
   
   // Detener micrófono actual
   if (mic) {
-    console.log("🛑 Deteniendo micrófono actual");
     mic.stop();
   }
   
-  // Recrear FFT con la configuración sin suavizado
-  console.log("🔧 Recreando FFT");
+  // Recrear FFT
   fft = new p5.FFT(0, 1024);
   
-  // Reiniciar audio con verificación mejorada
+  // Reiniciar audio
   setTimeout(() => {
-    console.log("🔄 Iniciando reconexión...");
     enableAudio();
   }, 500);
 }
@@ -405,6 +336,133 @@ function windowResized() {
   let newWidth = windowWidth * 0.4; // Más pequeño para dejar espacio a controles
   let newHeight = newWidth * (16/9); // Mantener proporción 9:16
   resizeCanvas(newWidth, newHeight);
+}
+
+// Función para configurar los controles de sliders
+function setupControls() {
+  // Event listeners para sliders
+  const rotXSlider = document.getElementById('rotX-slider');
+  const rotYSlider = document.getElementById('rotY-slider');
+  const rotZSlider = document.getElementById('rotZ-slider');
+  const scaleSlider = document.getElementById('scale-slider');
+  const saturationSlider = document.getElementById('saturation-slider');
+  const brightnessSlider = document.getElementById('brightness-slider');
+  
+  // Verificar que los elementos existen y agregar event listeners
+  if (rotXSlider) {
+    rotXSlider.addEventListener('input', (e) => {
+      rotXMultiplier = parseFloat(e.target.value);
+      document.getElementById('rotX-value').textContent = rotXMultiplier.toFixed(1);
+    });
+  }
+  
+  if (rotYSlider) {
+    rotYSlider.addEventListener('input', (e) => {
+      rotYMultiplier = parseFloat(e.target.value);
+      document.getElementById('rotY-value').textContent = rotYMultiplier.toFixed(1);
+    });
+  }
+  
+  if (rotZSlider) {
+    rotZSlider.addEventListener('input', (e) => {
+      rotZMultiplier = parseFloat(e.target.value);
+      document.getElementById('rotZ-value').textContent = rotZMultiplier.toFixed(1);
+    });
+  }
+  
+  if (scaleSlider) {
+    scaleSlider.addEventListener('input', (e) => {
+      scaleMultiplier = parseFloat(e.target.value);
+      document.getElementById('scale-value').textContent = scaleMultiplier.toFixed(1);
+    });
+  }
+  
+  if (saturationSlider) {
+    saturationSlider.addEventListener('input', (e) => {
+      saturationControl = parseInt(e.target.value);
+      document.getElementById('saturation-value').textContent = saturationControl + '%';
+    });
+  }
+  
+  if (brightnessSlider) {
+    brightnessSlider.addEventListener('input', (e) => {
+      brightnessControl = parseInt(e.target.value);
+      document.getElementById('brightness-value').textContent = brightnessControl + '%';
+    });
+  }
+}
+
+// Función para resetear controles a valores por defecto
+function resetControls() {
+  // Reset variables
+  rotXMultiplier = 1.0;
+  rotYMultiplier = 1.0;
+  rotZMultiplier = 1.0;
+  scaleMultiplier = 1.0;
+  saturationControl = 80;
+  brightnessControl = 80;
+  
+  // Reset sliders
+  const rotXSlider = document.getElementById('rotX-slider');
+  const rotYSlider = document.getElementById('rotY-slider');
+  const rotZSlider = document.getElementById('rotZ-slider');
+  const scaleSlider = document.getElementById('scale-slider');
+  const saturationSlider = document.getElementById('saturation-slider');
+  const brightnessSlider = document.getElementById('brightness-slider');
+  
+  if (rotXSlider) rotXSlider.value = 1.0;
+  if (rotYSlider) rotYSlider.value = 1.0;
+  if (rotZSlider) rotZSlider.value = 1.0;
+  if (scaleSlider) scaleSlider.value = 1.0;
+  if (saturationSlider) saturationSlider.value = 80;
+  if (brightnessSlider) brightnessSlider.value = 80;
+  
+  // Reset displays
+  const rotXValue = document.getElementById('rotX-value');
+  const rotYValue = document.getElementById('rotY-value');
+  const rotZValue = document.getElementById('rotZ-value');
+  const scaleValue = document.getElementById('scale-value');
+  const saturationValue = document.getElementById('saturation-value');
+  const brightnessValue = document.getElementById('brightness-value');
+  
+  if (rotXValue) rotXValue.textContent = "1.0";
+  if (rotYValue) rotYValue.textContent = "1.0";
+  if (rotZValue) rotZValue.textContent = "1.0";
+  if (scaleValue) scaleValue.textContent = "1.0";
+  if (saturationValue) saturationValue.textContent = "80%";
+  if (brightnessValue) brightnessValue.textContent = "80%";
+}
+
+// Función para resetear valores a defaults
+function resetControls() {
+  rotXMultiplier = 1.0;
+  rotYMultiplier = 1.0;
+  rotZMultiplier = 1.0;
+  scaleMultiplier = 1.0;
+  saturationControl = 80;
+  brightnessControl = 80;
+  
+  // Actualizar sliders y valores en la interfaz
+  updateSliderValues();
+}
+
+// Función para actualizar valores de sliders en la interfaz
+function updateSliderValues() {
+  const sliders = [
+    {slider: 'rotX-slider', value: 'rotX-value', val: rotXMultiplier, suffix: ''},
+    {slider: 'rotY-slider', value: 'rotY-value', val: rotYMultiplier, suffix: ''},
+    {slider: 'rotZ-slider', value: 'rotZ-value', val: rotZMultiplier, suffix: ''},
+    {slider: 'scale-slider', value: 'scale-value', val: scaleMultiplier, suffix: ''},
+    {slider: 'saturation-slider', value: 'saturation-value', val: saturationControl, suffix: '%'},
+    {slider: 'brightness-slider', value: 'brightness-value', val: brightnessControl, suffix: '%'}
+  ];
+  
+  sliders.forEach(s => {
+    const sliderEl = document.getElementById(s.slider);
+    const valueEl = document.getElementById(s.value);
+    if (sliderEl) sliderEl.value = s.val;
+    if (valueEl) valueEl.textContent = s.val + s.suffix;
+  });
 }
 
 // Función para actualizar el estado en la interfaz

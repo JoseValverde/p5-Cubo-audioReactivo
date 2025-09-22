@@ -7,6 +7,10 @@ let mic;
 let audioLevel = 0;
 let isAudioEnabled = false;
 
+// Variable para imagen de fondo
+let fondoVertical;
+let texturaCubo;
+
 // Variables de frecuencia de audio
 let fft;
 let bassLevel = 0;             // 🔵 Graves (20-250 Hz)
@@ -23,6 +27,12 @@ let rotZMultiplier = 1.0;
 let scaleMultiplier = 1.0;
 let saturationControl = 80;
 let brightnessControl = 80;
+
+// Función preload para cargar recursos antes de setup
+function preload() {
+  fondoVertical = loadImage('fondo-vertical.jpg');
+  texturaCubo = loadImage('textura-cubo.png');
+}
 
 function setup() {
   // Crear canvas proporcional a 1080x1920 (9:16)
@@ -55,11 +65,29 @@ function setup() {
 }
 
 function draw() {
-  // Fondo dinámico
-  background(220, 50, 20);
+  // Limpiar el canvas
+  clear();
+  
+  // Dibujar fondo con imagen como textura en un plano
+  push();
+  // Posicionar el plano de fondo muy atrás
+  translate(0, 0, -500);
+  // Sin rotaciones para el fondo
+  rotateX(0);
+  rotateY(0);
+  rotateZ(0);
+  
+  // Aplicar la imagen como textura
+  texture(fondoVertical);
+  noStroke();
+  
+  // Crear plano que cubra toda la pantalla
+  // Usar dimensiones más grandes para asegurar cobertura completa
+  plane(width * 2, height * 2);
+  pop();
   
   // Iluminación
-  ambientLight(60);
+  ambientLight(160);
   directionalLight(255, 255, 255, -1, 0.5, -1);
   pointLight(255, 255, 255, 0, -200, 200);
   
@@ -101,10 +129,7 @@ function draw() {
     rotateY(midRotation/10 * rotYMultiplier);
     rotateZ(frameCount * 0.001 * rotZMultiplier); // Z más dinámico para drops
     
-    // 🔴 AGUDOS → Brillo (saturación y valor)
-    let brightness = map(trebleLevel, 0, 255, 20, brightnessControl);
-    let saturation = saturationControl;
-    colorHue = map(audioLevel, 0, 1, 0, 360); // Color general por nivel
+    // colorHue se mantiene sin cambiar con audio - solo cambia con controles manuales
   } else {
     // Rotaciones normales sin audio
     rotateX(rotationX);
@@ -118,16 +143,25 @@ function draw() {
   
   // Material del cubo con brillo reactivo a agudos
   let currentBrightness = brightnessControl;
-  let currentSaturation = saturationControl;
+  let currentSaturation = Math.abs(saturationControl);
   
   if (isAudioEnabled) {
-    currentBrightness = map(trebleLevel, 0, 255, 20, brightnessControl);
-    currentSaturation = saturationControl;
+    // En modo audio: usar el slider como valor BASE y SUMAR el efecto del audio
+    let audioBoost = map(trebleLevel, 0, 100, -20, 40); // Audio añade entre -20 y +40
+    currentBrightness = brightnessControl + audioBoost;
+    currentSaturation = Math.abs(saturationControl) + audioBoost;
+    
+    // Limitar a rangos válidos (0-100%)
+    currentBrightness = constrain(currentBrightness, 0, 100);
+    currentSaturation = constrain(currentSaturation, 0, 100);
   }
   
   fill(colorHue, currentSaturation, currentBrightness);
-  stroke(colorHue, 100, 100);
-  strokeWeight(2);
+  stroke(colorHue, currentSaturation, Math.min(100, currentBrightness + 10));
+  strokeWeight(0);
+  
+  // Aplicar textura específica al cubo
+  texture(texturaCubo);
   
   // Dibujar el cubo
   box(dynamicSize);
@@ -156,9 +190,35 @@ function updateNumericInfo() {
   const currentRotY = document.getElementById('current-rot-y');
   const currentSize = document.getElementById('current-size');
   
+  // Nuevos elementos para colores y luces
+  const cubeHue = document.getElementById('cube-hue');
+  const cubeSaturation = document.getElementById('cube-saturation');
+  const cubeBrightness = document.getElementById('cube-brightness');
+  const ambientLight = document.getElementById('ambient-light');
+  const directionalLight = document.getElementById('directional-light');
+  const pointLight = document.getElementById('point-light');
+  
+  // Calcular valores actuales de color (mismo cálculo que en draw())
+  let currentBrightness = brightnessControl;
+  let currentSaturation = Math.abs(saturationControl);
+  
+  if (isAudioEnabled) {
+    let audioBoost = map(trebleLevel, 0, 100, -20, 40);
+    currentBrightness = constrain(brightnessControl + audioBoost, 0, 100);
+    currentSaturation = constrain(Math.abs(saturationControl) + audioBoost, 0, 100);
+  }
+  
   // Actualizar valores individuales
   if (fpsValue) fpsValue.textContent = Math.round(frameRate());
   if (colorValue) colorValue.textContent = Math.round(colorHue);
+  
+  // Actualizar información de colores y luces
+  if (cubeHue) cubeHue.textContent = Math.round(colorHue);
+  if (cubeSaturation) cubeSaturation.textContent = Math.round(Math.abs(currentSaturation));
+  if (cubeBrightness) cubeBrightness.textContent = Math.round(currentBrightness);
+  if (ambientLight) ambientLight.textContent = "160";
+  if (directionalLight) directionalLight.textContent = "Blanca (-1, 0.5, -1)";
+  if (pointLight) pointLight.textContent = "Blanca (0, -200, 200)";
   
   if (audioStatusText) {
     audioStatusText.textContent = isAudioEnabled ? 'ANÁLISIS FFT ACTIVO' : 'DESACTIVADO';
@@ -172,8 +232,8 @@ function updateNumericInfo() {
   if (rotXSpeed) rotXSpeed.textContent = (midLevel * 0.005).toFixed(4);
   if (rotYSpeed) rotYSpeed.textContent = (midLevel * 0.008).toFixed(4);
   if (trebleLevelValue) trebleLevelValue.textContent = trebleLevel.toFixed(1);
-  if (dynamicSaturation) dynamicSaturation.textContent = isAudioEnabled ? map(trebleLevel, 0, 255, 50, 100).toFixed(1) : '80.0';
-  if (dynamicBrightness) dynamicBrightness.textContent = isAudioEnabled ? map(trebleLevel, 0, 255, 60, 100).toFixed(1) : '90.0';
+  if (dynamicSaturation) dynamicSaturation.textContent = Math.abs(currentSaturation).toFixed(1);
+  if (dynamicBrightness) dynamicBrightness.textContent = currentBrightness.toFixed(1);
   if (currentRotX) currentRotX.textContent = (isAudioEnabled ? bassRotation : rotationX).toFixed(3);
   if (currentRotY) currentRotY.textContent = (isAudioEnabled ? midRotation : rotationY).toFixed(3);
   if (currentSize) currentSize.textContent = Math.round(cubeSize + sin(frameCount * 0.05) * 20);
@@ -181,7 +241,7 @@ function updateNumericInfo() {
 
 function mousePressed() {
   // Cambiar color base al hacer click
-  currentHue = (currentHue + 30) % 360;
+  colorHue = (colorHue + 30) % 360;
 }
 
 function keyPressed() {
@@ -434,7 +494,7 @@ function resetControls() {
 }
 
 // Función para resetear valores a defaults
-function resetControls() {
+function resetControlsToDefaults() {
   rotXMultiplier = 1.0;
   rotYMultiplier = 1.0;
   rotZMultiplier = 1.0;

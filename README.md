@@ -1,30 +1,30 @@
-# Cubo Reactivo Audio-Visual v2.2 🎵🎨
+# Cubo Reactivo Audio-Visual v2.2
 
 Un cubo 3D interactivo que reacciona en tiempo real al audio, creado con p5.js y WebGL. El proyecto combina análisis de frecuencias FFT con visualizaciones dinámicas y controles personalizables.
 
-## 🎬 Demo en Video
+## Demo en Video
 
 [![Ver Demo](https://img.youtube.com/vi/VmpKj5NFPos/maxresdefault.jpg)](https://youtu.be/VmpKj5NFPos)
 
-**[▶️ Ver resultado en YouTube](https://youtu.be/VmpKj5NFPos)**
+**[Ver resultado en YouTube](https://youtu.be/VmpKj5NFPos)**
 
-## ✨ Características Principales
+## Características Principales
 
-### 🎵 Análisis de Audio Avanzado
+### Análisis de Audio Avanzado
 - **Análisis FFT en tiempo real** con 1024 bins de frecuencia
 - **Separación en 3 bandas optimizada para música electrónica:**
-  - 🔵 **SUB-GRAVES** (20-100 Hz): Kick drums, sub-bass → **Escala del cubo**
-  - 🟡 **MEDIOS** (100-4000 Hz): Basslines, leads, voces → **Rotación dinámica**
-  - 🔴 **AGUDOS** (4000+ Hz): Hi-hats, crashes, brillos → **Brillo y saturación**
+  - **SUB-GRAVES** (20-100 Hz): Kick drums, sub-bass → **Escala del cubo**
+  - **MEDIOS** (100-4000 Hz): Basslines, leads, voces → **Rotación dinámica**
+  - **AGUDOS** (4000+ Hz): Hi-hats, crashes, brillos → **Brillo y saturación**
 
-### 🎛️ Controles Personalizables
+### Controles Personalizables
 - **Sliders de rotación** (X, Y, Z) con multiplicadores de -2x a +2x
 - **Control de escala** reactiva a graves (0.1x a 3x)
 - **Saturación** ajustable (-100% a +100%)
 - **Brillo** controlable (0% a 100%)
 - **Sistema aditivo**: Los sliders establecen valores base y el audio añade variación
 
-### 🎨 Sistema Visual
+### Sistema Visual
 - **Modo de color HSB** (360°, 100%, 100%)
 - **Color manual** (no cambia automáticamente con audio)
 - **Fondo personalizable** con imagen de textura
@@ -32,7 +32,7 @@ Un cubo 3D interactivo que reacciona en tiempo real al audio, creado con p5.js y
 - **Bordes reactivos** con strokeWeight y colores dinámicos
 - **Iluminación 3D** completa (ambiente, direccional, puntual)
 
-### 📊 Información en Tiempo Real
+### Información en Tiempo Real
 - **FPS** y estado del sistema
 - **Valores de audio** por banda de frecuencia
 - **Colores actuales** del cubo (HSB)
@@ -40,7 +40,7 @@ Un cubo 3D interactivo que reacciona en tiempo real al audio, creado con p5.js y
 - **Velocidades de rotación** en tiempo real
 - **Factores de escala** dinámicos
 
-## 🎹 Controles de Teclado
+## Controles de Teclado
 
 | Tecla | Función |
 |-------|---------|
@@ -50,7 +50,7 @@ Un cubo 3D interactivo que reacciona en tiempo real al audio, creado con p5.js y
 | **X** | Reconectar audio |
 | **CLICK** | Cambiar color base |
 
-## 🛠️ Tecnologías Utilizadas
+## Tecnologías Utilizadas
 
 - **p5.js** - Framework de creative coding
 - **p5.sound** - Análisis de audio y FFT
@@ -59,7 +59,7 @@ Un cubo 3D interactivo que reacciona en tiempo real al audio, creado con p5.js y
 - **HTML5 Canvas** - Superficie de dibujo
 - **CSS3** - Interfaz glassmorphism
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 cubo-reactivo/
@@ -71,7 +71,7 @@ cubo-reactivo/
 └── README.md               # Este archivo
 ```
 
-## 🔧 Configuración y Uso
+## Configuración y Uso
 
 ### 1. Clonar el repositorio
 ```bash
@@ -94,12 +94,12 @@ php -S localhost:8000
 ### 3. Abrir en navegador
 Navegar a `http://localhost:8000`
 
-## 🎧 Configuración de Audio
+## Configuración de Audio
 
 ### Para macOS - BlackHole
 Para capturar audio del sistema (música, aplicaciones, etc.) en macOS, recomiendo usar **BlackHole**:
 
-**[📥 Descargar BlackHole](https://github.com/ExistentialAudio/BlackHole)**
+**[Descargar BlackHole](https://github.com/ExistentialAudio/BlackHole)**
 
 BlackHole es un driver de audio virtual que permite:
 - Capturar audio interno del sistema
@@ -115,7 +115,7 @@ BlackHole es un driver de audio virtual que permite:
 ### Permisos de Micrófono
 El navegador solicitará permisos de micrófono al cargar la aplicación. Aceptar para habilitar la reactividad al audio.
 
-## 🎮 Parámetros Técnicos
+## Parámetros Técnicos
 
 ### Análisis FFT
 - **Bins**: 1024 frecuencias (0-22kHz aprox)
@@ -135,7 +135,7 @@ El navegador solicitará permisos de micrófono al cargar la aplicación. Acepta
 - **Color**: HSB (360°, 100%, 100%)
 - **FPS objetivo**: 60 FPS
 
-## 🎨 Personalización
+## Personalización
 
 ### Cambiar Imágenes
 - **Fondo**: Reemplazar `fondo-vertical.jpg`
@@ -161,7 +161,7 @@ for (let i = 37; i <= 186; i++)  // Medios altos: bins 37-186
 for (let i = 186; i <= 512; i++) // Agudos: bins 186-512
 ```
 
-## 📈 Optimizaciones
+## Optimizaciones
 
 - **Análisis de bandas específicas** para música electrónica
 - **Mapeo inteligente** de frecuencias a efectos visuales
@@ -169,7 +169,7 @@ for (let i = 186; i <= 512; i++) // Agudos: bins 186-512
 - **Gestión de memoria** eficiente en análisis FFT
 - **Reconexión automática** de audio en caso de pérdida
 
-## 🐛 Solución de Problemas
+## Solución de Problemas
 
 ### El audio no se detecta
 1. Verificar permisos de micrófono en el navegador
@@ -188,7 +188,7 @@ for (let i = 186; i <= 512; i++) // Agudos: bins 186-512
 2. Usar CLICK, R, o C para cambiar colores
 3. Los sliders afectan saturación/brillo, no el tono
 
-## 🤝 Contribuciones
+## Contribuciones
 
 ¡Las contribuciones son bienvenidas! 
 
@@ -198,11 +198,11 @@ for (let i = 186; i <= 512; i++) // Agudos: bins 186-512
 4. Push a la rama: `git push origin nueva-caracteristica`
 5. Abrir un Pull Request
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
 
-## 👨‍💻 Autor
+## Autor
 
 **José Valverde**
 - GitHub: [@JoseValverde](https://github.com/JoseValverde)
@@ -210,6 +210,6 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 
 ---
 
-### 🎵 ¡Disfruta creando visualizaciones con tu música favorita! 🎨
+### ¡Disfruta creando visualizaciones con tu música favorita!
 
 *Optimizado para música electrónica, pero funciona con cualquier tipo de audio.*
